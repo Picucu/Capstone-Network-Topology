@@ -1,5 +1,12 @@
 import sys;
-from scapy.all import IP, send, ICMP, sr, sr1, TCP, traceroute, ls;
+import csv;
+from scapy.all import IP, send, ICMP, sr, sr1, TCP, traceroute, ls, srp, Ether, UDP;
+
+"""
+Assumptions made:
+1. Only ICMP packets for now
+2. Site list must be IP addresses for now
+"""
 
 class Route:
 
@@ -37,7 +44,7 @@ class Node:
         return other != None and self.value == other.value and self.routes == other.routes;
 
     def __str__(self):
-        return self.value;
+        return "Address: " + self.value + "Routes: " + '\n'.join(self.routes);
 
 class Tree:
 
@@ -57,7 +64,6 @@ class Tree:
 
         return None
 
-    # gets the route given a destination address
     def getRoute(self, destination, protocol):
         res = [self.root];
         current = self.root;
@@ -73,7 +79,14 @@ class Tree:
 
     def printRoute(self, address, protocol):
         route = self.getRoute(address, protocol);
-        print(route);
+        i = 0
+        for node in route:
+            if(i == len(route) - 1):
+                print(node.value)
+            else:
+                print(node.value + '->', end="");
+
+                i += 1
 
     def append(self, address, destination, protocol):
         if(self.root == None):
@@ -100,6 +113,9 @@ class Tree:
     def print(self):
         self.root.print();
 
+"""
+GUI class
+"""
 class Traceroute:
 
     def __init__(self, argv):
@@ -108,55 +124,33 @@ class Traceroute:
         self.run();
 
     def run(self):
+        self.tree = Tree();
 
-        tree = Tree();
+        sites = []
+        with open("sites.csv", newline='') as csvfile:
+            sitereader = csv.reader(csvfile, delimiter='\n');
+            for row in sitereader:
+                sites.append(row[0]);
 
-        res, unans = sr(IP(dst="101.231.120.158", ttl=(1,20))/ICMP(), timeout=5);
-        for r in res:
-            sent = r.query;
-            received = r.answer;
-            icmpSegment = received[ICMP];
-            ipSegment = received[IP];
+        for site in sites:
+            print("Tracerouting", site);
+            for i in range(1, 28):
+                pkt = IP(dst=site, ttl=i) / ICMP()
 
-            tree.append(ipSegment.src, "101.231.120.158", "ICMP");
-            print("Appended", ipSegment.src);
-            # sometimes packets are sent again to the destination because of increasing ttl
-            if(ipSegment.src == "101.231.120.158"):
-                break;
+                reply = sr1(pkt, verbose=0, timeout=1)
+                if reply is None:
+                    print("No reply")
+                    continue
+                else:
+                    if(reply.src == site):
+                        print("Reached end", reply.src);
+                        tree.append(reply.src, site, "ICMP");
+                        break
 
-        # tree.print();
-        tree.print();
+                    tree.append(reply.src, site, "ICMP");
+                    print("%d hops away: " % i , reply.src)
 
-        # Manual traceroute
-        # time = 1
-        # while(True):
-            # reply = sr1(IP(dst="8.8.8.8", ttl=time)/ICMP(), timeout=5);
-
-            # tree.append(reply[IP].src, "8.8.8.8", "ICMP");
-
-            # if(reply[ICMP].type == 0):
-                # break
-
-            # time += 1
-
-        # time = 1
-        # while(True):
-            # reply = sr1(IP(dst="101.231.120.158", ttl=time)/ICMP(), timeout=5);
-
-            # if(reply != None):
-                # if(reply != None and reply[ICMP] != None):
-                    # tree.append(reply[IP].src, "101.231.120.158", "ICMP");
-
-                # if(reply[ICMP].type == 0):
-                    # break
-
-                # time += 1
-
-        # googleRoute = tree.getRoute("8.8.8.8");
-        # nyuRoute = tree.getRoute("101.231.120.158");
-
-        tree.printRoute("101.231.120.159", "ICMP");
-        print(tree.getRoute("101.231.120.159", "ICMP"))
+            tree.printRoute(site, "ICMP");
 
 if(__name__ == "__main__"):
     Traceroute(sys.argv[1:]);
