@@ -124,33 +124,45 @@ class Traceroute:
         self.run();
 
     def run(self):
-        self.tree = Tree();
+        #self.tree = Tree();
 
-        sites = []
-        with open("sites.csv", newline='') as csvfile:
-            sitereader = csv.reader(csvfile, delimiter='\n');
-            for row in sitereader:
-                sites.append(row[0]);
+        sites = ["8.8.8.8"]
+        # with open("sites.csv", newline='') as csvfile:
+        #     sitereader = csv.reader(csvfile, delimiter='\n');
+        #     for row in sitereader:
+        #         sites.append(row[0]);
 
         for site in sites:
             print("Tracerouting", site);
             for i in range(1, 28):
-                pkt = IP(dst=site, ttl=i) / ICMP()
+                pkti = IP(dst=site, ttl=(1,20)) / ICMP()
+                pktt = IP(dst=site, ttl=(1,20)) / TCP(dport=80, flags="S")
 
-                reply = sr1(pkt, verbose=0, timeout=1)
-                if reply is None:
-                    print("No reply")
-                    continue
-                else:
-                    if(reply.src == site):
-                        print("Reached end", reply.src);
-                        tree.append(reply.src, site, "ICMP");
-                        break
+                ansi= sr1(pkti, timeout=10)
+                anst= sr1(pktt, timeout=10)
+                time = ansi.time - pkti.sent_time
+                ansi.sprintf("IP: %IP.src%, Time: ", time*1000)
+            
+            
+            
+            
+            for r in ansi:
+                print(r[1].summary(), r[1].time - r[0].sent_time)
+            
+            
+            #     if reply is None:
+            #         print("No reply")
+            #         continue
+            #     else:
+            #         if(reply.src == site):
+            #             print("Reached end", reply.src);
+            #             tree.append(reply.src, site, "ICMP");
+            #             break
 
-                    tree.append(reply.src, site, "ICMP");
-                    print("%d hops away: " % i , reply.src)
+            #         tree.append(reply.src, site, "ICMP");
+            #         print("%d hops away: " % i , reply.src)
 
-            tree.printRoute(site, "ICMP");
+            # tree.printRoute(site, "ICMP");
 
 if(__name__ == "__main__"):
     Traceroute(sys.argv[1:]);
