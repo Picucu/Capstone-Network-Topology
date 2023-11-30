@@ -1,5 +1,6 @@
 import sys;
 import csv;
+import argparse;
 from scapy.all import IP, send, ICMP, sr, sr1, TCP, traceroute, ls, srp, Ether, UDP;
 
 """
@@ -132,22 +133,65 @@ class Traceroute:
         #     for row in sitereader:
         #         sites.append(row[0]);
 
-        for site in sites:
-            print("Tracerouting", site);
-            for i in range(1, 28):
-                pkti = IP(dst=site, ttl=(1,20)) / ICMP()
-                pktt = IP(dst=site, ttl=(1,20)) / TCP(dport=80, flags="S")
+        
 
-                ansi= sr1(pkti, timeout=10)
-                anst= sr1(pktt, timeout=10)
-                time = ansi.time - pkti.sent_time
-                ansi.sprintf("IP: %IP.src%, Time: ", time*1000)
-            
-            
-            
-            
-            for r in ansi:
-                print(r[1].summary(), r[1].time - r[0].sent_time)
+        for site in sites:
+            #TODO add ability to specify number of pings per ttl and choosing ttl range
+            #activate, deactivate tcp, udp and icmp
+            print("Tracerouting", site);
+            iFlag = 0
+            tFlag = 0
+            uFlag = 0
+            for i in range(1, 28):
+                #pktt = IP(dst=site, ttl=(1,20)) / TCP(dport=80, flags="S")
+                #anst= sr1(pktt, timeout=10)
+                
+                
+                # ICMP MODULE
+                itdict = {}
+                if iFlag == 0:
+                    for times in range(0,5):
+                        if iFlag == 0:
+                            pkti = IP(dst=site, ttl=i) / ICMP()
+                            ansi= sr1(pkti,verbose = 0, timeout=10)
+                        if ansi is not None:
+                            if ansi.src == site:
+                                if ansi.src not in itdict:
+                                    itdict[ansi.src] = [time]
+                                else:
+                                    itdict[ansi.src].append(time)
+                                iFlag = 1
+                            if ansi is not None and iFlag == 0:
+                                time = ansi.time - pkti.sent_time
+                                if ansi.src not in itdict:
+                                    itdict[ansi.src] = [time]
+                                else:
+                                    itdict[ansi.src].append(time)
+                            elif ansi is None:
+                                itdict[ansi.src].append("*")
+                                ansi = None
+                        elif ansi is None and iFlag == 0:
+                            itdict["*"] = ["*"]
+                            ansi = None
+                
+                for key in itdict:
+                    out = ""
+                    if itdict[key] == "*":
+                        print(" * * *")
+                    else:
+                        out = out+"{0} {1}\t".format(i, key)
+                        for time in itdict[key]:
+                            if time == "*":
+                                out = out+"*"
+                            else:
+                                out = out+"\t{0:.2f}ms".format(time*1000)
+                    print(out)
+                # TCP MODULE
+                
+                
+                
+                
+                
             
             
             #     if reply is None:
@@ -162,7 +206,8 @@ class Traceroute:
             #         tree.append(reply.src, site, "ICMP");
             #         print("%d hops away: " % i , reply.src)
 
-            # tree.printRoute(site, "ICMP");
+            # tree.printRoute(site, "ICMP")
+        
 
 if(__name__ == "__main__"):
     Traceroute(sys.argv[1:]);
