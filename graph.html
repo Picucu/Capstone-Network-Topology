@@ -1,0 +1,163 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script src="lib/bindings/utils.js"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100vw;
+                 height: 100vh;
+                 background-color: #222222;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "red", "font": {"color": "white"}, "id": "0.0.0.0", "label": "0.0.0.0", "shape": "dot", "title": "0.0.0.0"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "103.242.128.1", "label": "103.242.128.1", "shape": "dot", "title": "103.242.128.1"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "10.213.34.9", "label": "10.213.34.9", "shape": "dot", "title": "10.213.34.9"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "10.213.34.1", "label": "10.213.34.1", "shape": "dot", "title": "10.213.34.1"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "10.213.33.198", "label": "10.213.33.198", "shape": "dot", "title": "10.213.33.198"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "10.213.32.41", "label": "10.213.32.41", "shape": "dot", "title": "10.213.32.41"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "10.213.32.21", "label": "10.213.32.21", "shape": "dot", "title": "10.213.32.21"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "202.76.48.118", "label": "202.76.48.118", "shape": "dot", "title": "202.76.48.118"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "202.76.18.76", "label": "202.76.18.76", "shape": "dot", "title": "202.76.18.76"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "202.76.18.62", "label": "202.76.18.62", "shape": "dot", "title": "202.76.18.62"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "123.255.91.10", "label": "123.255.91.10", "shape": "dot", "title": "123.255.91.10"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "108.170.241.97", "label": "108.170.241.97", "shape": "dot", "title": "108.170.241.97"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "66.249.95.171", "label": "66.249.95.171", "shape": "dot", "title": "66.249.95.171"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "8.8.8.8", "label": "8.8.8.8", "shape": "dot", "title": "8.8.8.8"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "10.213.32.22", "label": "10.213.32.22", "shape": "dot", "title": "10.213.32.22"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "203.85.128.94", "label": "203.85.128.94", "shape": "dot", "title": "203.85.128.94"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "202.76.18.72", "label": "202.76.18.72", "shape": "dot", "title": "202.76.18.72"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "202.76.18.60", "label": "202.76.18.60", "shape": "dot", "title": "202.76.18.60"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "123.255.90.246", "label": "123.255.90.246", "shape": "dot", "title": "123.255.90.246"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "103.22.203.231", "label": "103.22.203.231", "shape": "dot", "title": "103.22.203.231"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "1.1.1.1", "label": "1.1.1.1", "shape": "dot", "title": "1.1.1.1"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "72.14.238.75", "label": "72.14.238.75", "shape": "dot", "title": "72.14.238.75"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "8.8.4.4", "label": "8.8.4.4", "shape": "dot", "title": "8.8.4.4"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "123.255.90.189", "label": "123.255.90.189", "shape": "dot", "title": "123.255.90.189"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "208.67.222.222", "label": "208.67.222.222", "shape": "dot", "title": "208.67.222.222"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "172.71.212.2", "label": "172.71.212.2", "shape": "dot", "title": "172.71.212.2"}]);
+                  edges = new vis.DataSet([{"arrows": "to", "color": "blue", "from": "0.0.0.0", "to": "103.242.128.1", "value": 4}, {"arrows": "to", "color": "blue", "from": "103.242.128.1", "to": "10.213.34.9", "value": 4}, {"arrows": "to", "color": "blue", "from": "10.213.34.9", "to": "10.213.34.1", "value": 4}, {"arrows": "to", "color": "blue", "from": "10.213.34.1", "to": "10.213.33.198", "value": 4}, {"arrows": "to", "color": "blue", "from": "10.213.33.198", "to": "10.213.32.41", "value": 4}, {"arrows": "to", "color": "blue", "from": "10.213.32.41", "to": "10.213.32.21", "value": 3}, {"arrows": "to", "color": "blue", "from": "10.213.32.21", "to": "202.76.48.118", "value": 3}, {"arrows": "to", "color": "blue", "from": "202.76.48.118", "to": "202.76.18.76", "value": 3}, {"arrows": "to", "color": "blue", "from": "202.76.18.76", "to": "202.76.18.62", "value": 3}, {"arrows": "to", "color": "blue", "from": "202.76.18.62", "to": "123.255.91.10", "value": 2}, {"arrows": "to", "color": "blue", "from": "123.255.91.10", "to": "108.170.241.97", "value": 2}, {"arrows": "to", "color": "blue", "from": "108.170.241.97", "to": "66.249.95.171", "value": 1}, {"arrows": "to", "color": "blue", "from": "66.249.95.171", "to": "8.8.8.8", "value": 1}, {"arrows": "to", "color": "blue", "from": "10.213.32.41", "to": "10.213.32.22", "value": 1}, {"arrows": "to", "color": "blue", "from": "10.213.32.22", "to": "203.85.128.94", "value": 1}, {"arrows": "to", "color": "blue", "from": "203.85.128.94", "to": "202.76.18.72", "value": 1}, {"arrows": "to", "color": "blue", "from": "202.76.18.72", "to": "202.76.18.60", "value": 1}, {"arrows": "to", "color": "blue", "from": "202.76.18.60", "to": "123.255.90.246", "value": 1}, {"arrows": "to", "color": "blue", "from": "123.255.90.246", "to": "103.22.203.231", "value": 1}, {"arrows": "to", "color": "blue", "from": "103.22.203.231", "to": "1.1.1.1", "value": 1}, {"arrows": "to", "color": "blue", "from": "108.170.241.97", "to": "72.14.238.75", "value": 1}, {"arrows": "to", "color": "blue", "from": "72.14.238.75", "to": "8.8.4.4", "value": 1}, {"arrows": "to", "color": "blue", "from": "202.76.18.62", "to": "123.255.90.189", "value": 1}, {"arrows": "to", "color": "blue", "from": "123.255.90.189", "to": "208.67.222.222", "value": 1}, {"arrows": "to", "color": "green", "from": "0.0.0.0", "to": "103.242.128.1", "value": 4}, {"arrows": "to", "color": "green", "from": "103.242.128.1", "to": "10.213.34.9", "value": 4}, {"arrows": "to", "color": "green", "from": "10.213.34.9", "to": "10.213.34.1", "value": 4}, {"arrows": "to", "color": "green", "from": "10.213.34.1", "to": "10.213.33.198", "value": 4}, {"arrows": "to", "color": "green", "from": "10.213.33.198", "to": "10.213.32.41", "value": 4}, {"arrows": "to", "color": "green", "from": "10.213.32.41", "to": "10.213.32.21", "value": 3}, {"arrows": "to", "color": "green", "from": "10.213.32.21", "to": "202.76.48.118", "value": 3}, {"arrows": "to", "color": "green", "from": "202.76.48.118", "to": "202.76.18.76", "value": 3}, {"arrows": "to", "color": "green", "from": "202.76.18.76", "to": "202.76.18.62", "value": 3}, {"arrows": "to", "color": "green", "from": "202.76.18.62", "to": "123.255.91.10", "value": 2}, {"arrows": "to", "color": "green", "from": "10.213.32.41", "to": "10.213.32.22", "value": 1}, {"arrows": "to", "color": "green", "from": "10.213.32.22", "to": "203.85.128.94", "value": 1}, {"arrows": "to", "color": "green", "from": "203.85.128.94", "to": "202.76.18.72", "value": 1}, {"arrows": "to", "color": "green", "from": "202.76.18.72", "to": "202.76.18.60", "value": 1}, {"arrows": "to", "color": "green", "from": "202.76.18.60", "to": "123.255.90.246", "value": 1}, {"arrows": "to", "color": "green", "from": "123.255.90.246", "to": "103.22.203.231", "value": 1}, {"arrows": "to", "color": "green", "from": "103.22.203.231", "to": "1.1.1.1", "value": 1}, {"arrows": "to", "color": "green", "from": "202.76.18.62", "to": "123.255.90.189", "value": 1}, {"arrows": "to", "color": "green", "from": "123.255.90.189", "to": "208.67.222.222", "value": 1}, {"arrows": "to", "color": "red", "from": "0.0.0.0", "to": "103.242.128.1", "value": 4}, {"arrows": "to", "color": "red", "from": "103.242.128.1", "to": "10.213.34.9", "value": 4}, {"arrows": "to", "color": "red", "from": "10.213.34.9", "to": "10.213.34.1", "value": 4}, {"arrows": "to", "color": "red", "from": "10.213.34.1", "to": "10.213.33.198", "value": 4}, {"arrows": "to", "color": "red", "from": "10.213.33.198", "to": "10.213.32.41", "value": 4}, {"arrows": "to", "color": "red", "from": "10.213.32.41", "to": "10.213.32.21", "value": 3}, {"arrows": "to", "color": "red", "from": "10.213.32.21", "to": "202.76.48.118", "value": 3}, {"arrows": "to", "color": "red", "from": "202.76.48.118", "to": "202.76.18.76", "value": 3}, {"arrows": "to", "color": "red", "from": "202.76.18.76", "to": "202.76.18.62", "value": 3}, {"arrows": "to", "color": "red", "from": "202.76.18.62", "to": "123.255.91.10", "value": 2}, {"arrows": "to", "color": "red", "from": "10.213.32.41", "to": "10.213.32.22", "value": 1}, {"arrows": "to", "color": "red", "from": "10.213.32.22", "to": "203.85.128.94", "value": 1}, {"arrows": "to", "color": "red", "from": "203.85.128.94", "to": "202.76.18.72", "value": 1}, {"arrows": "to", "color": "red", "from": "202.76.18.72", "to": "202.76.18.60", "value": 1}, {"arrows": "to", "color": "red", "from": "202.76.18.60", "to": "123.255.90.246", "value": 1}, {"arrows": "to", "color": "red", "from": "123.255.90.246", "to": "172.71.212.2", "value": 1}, {"arrows": "to", "color": "red", "from": "202.76.18.62", "to": "123.255.90.189", "value": 1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "barnesHut": {
+            "avoidOverlap": 0,
+            "centralGravity": 0.3,
+            "damping": 0.09,
+            "gravitationalConstant": -80000,
+            "springConstant": 0.001,
+            "springLength": 250
+        },
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>

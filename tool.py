@@ -1,14 +1,31 @@
-import sys;
-import csv;
+import sys;import csv;
 import argparse;
+import re;
+from visualizer import createGraph;
 from scapy.all import IP, send, ICMP, sr, sr1, TCP, traceroute, ls, srp, Ether, UDP;
 
 class Traceroute:
 
     def __init__(self, argv):
-        self.argv = argv;
+        args = {
+            'udp': "-udp" in argv,
+            'tcp': "-tcp" in argv,
+            'icmp': "-icmp" in argv,
+            'ttlStart': int(re.search(r'-ttlStart=[0-9]+', ' '.join(argv)).group(0).split('=')[1]) if re.search(r'-ttlStart=[0-9]+', ' '.join(argv)) else 1,
+            'ttlEnd': int(re.search(r'-ttlEnd=[0-9]+', ' '.join(argv)).group(0).split('=')[1]) if re.search(r'-ttlEnd=[0-9]+', ' '.join(argv)) else 20,
+        }
 
-        self.run();
+        if(args['ttlStart'] > args['ttlEnd']):
+            print("TTL start must be smaller than TTL end");
+            return
+
+        if(args['udp'] == False and args['tcp'] == False and args['icmp'] == False):
+            args['udp'] = True;
+            args['tcp'] = True;
+            args['icmp'] = True;
+
+        # createGraph([]);
+        self.run(args);
     
     def IcmpTrc(self, i, c, addr, t=5):
         outdict = {}
@@ -17,7 +34,6 @@ class Traceroute:
             pkti = IP(dst=addr, ttl=i) / ICMP()
             ansi= sr1(pkti,verbose = 0, timeout=t)
             if ansi is not None:
-                print(ansi);
                 if ansi.src not in outdict:
                     outdict[ansi.src] = [ansi.time - pkti.sent_time]
                 else:
@@ -47,6 +63,7 @@ class Traceroute:
                     outdict[anst.src] = [anst.time - pktt.sent_time]
                 else:
                     outdict[anst.src].append(anst.time - pktt.sent_time)
+            else:
                 # this is horrible but it works i guess
                 if len(list(outdict.keys())) == 0:
                     predropped.append("*")
@@ -92,19 +109,6 @@ class Traceroute:
             3: "UDP"
         }
         for key in dict:
-<<<<<<< HEAD
-            out = ""
-            if key == "*":
-                out = out + "{0} ***.***.***\t".format(i) + "* " * dict[key]
-            else:
-                out = out+"{0} {1}\t".format(i, key)
-                for time in dict[key]:
-                    if time == "*":
-                        out = out+"\t*"
-                    else:
-                        out = out+"  {0:.2f}ms".format(time*1000)
-            print(out)
-=======
                 out = ""
                 if key == "*":
                     out = out + pkttypes[type] + " {0} ***.***.***\t".format(i) + "* " * dict[key]
@@ -116,12 +120,15 @@ class Traceroute:
                         else:
                             out = out+"  {0:.2f}ms".format(time*1000)
                 print(out)
->>>>>>> 37822871776aa6a450a59e7b3c7df65772c298d5
 
-    def run(self):
+    def run(self, args):
+        sites = ["8.8.8.8", "1.1.1.1", "8.8.4.4", "208.67.222.222"]
+        # sites = ["8.8.8.8", "1.1.1.1"];
+        # sites = ["1.1.1.1"];
 
-        sites = ["8.8.8.8"]
-
+        icmpRoutes = {};
+        tcpRoutes = {};
+        udpRoutes = {};
         for site in sites:
             #TODO add ability to specify number of pings per ttl and choosing ttl range
             #activate, deactivate tcp, udp and icmp
@@ -129,46 +136,42 @@ class Traceroute:
             iFlag = 0
             tFlag = 0
             uFlag = 0
-            ttl = 20
-            iedges = []
-            tedges = []
-            uedges = []
-            for i in range(1, ttl+1):
-                #pktt = IP(dst=site, ttl=(1,20)) / TCP(dport=80, flags="S")
-                #anst= sr1(pktt, timeout=10)
-                
-                
-                # ICMP MODULE
-                
-                if iFlag == 0:
-                    itdict = self.IcmpTrc(i, 3, site)
-                    if site in itdict.keys():
-                        iFlag = 1
-                    self.record(itdict, i, 1)
-                if tFlag == 0:
-                    ttdict = self.TcpTrc(i, 3, site)
-                    if site in ttdict.keys():
-                        tFlag = 1
-                    self.record(ttdict, i, 2)
-                if uFlag == 0:
-                    udict = self.UdpTrc(i, 3, site)
-                    if site in udict.keys():
-                        uFlag = 1
-                    self.record(udict, i, 3)
-            #     if reply is None:
-            #         print("No reply")
-            #         continue
-            #     else:
-            #         if(reply.src == site):
-            #             print("Reached end", reply.src);
-            #             tree.append(reply.src, site, "ICMP");
-            #             break
+            for i in range(args['ttlStart'], args['ttlEnd']):
+                if(args['icmp']):
+                    if iFlag == 0:
+                        itdict = self.IcmpTrc(i, 3, site, 0.1)
+                        if site in itdict.keys():
+                            iFlag = 1
+                        if(site not in icmpRoutes.keys()):
+                            icmpRoutes[site] = [];
 
-            #         tree.append(reply.src, site, "ICMP");
-            #         print("%d hops away: " % i , reply.src)
+                        if(list(itdict.keys())[0] != "*"):
+                            icmpRoutes[site].append(itdict)
+                        self.record(itdict, i, 1)
+                if(args['tcp']):
+                    if tFlag == 0:
+                        ttdict = self.TcpTrc(i, 3, site, 0.1)
+                        if site in ttdict.keys():
+                            tFlag = 1
+                        if(site not in tcpRoutes.keys()):
+                            tcpRoutes[site] = [];
 
-            # tree.printRoute(site, "ICMP")
-        
+                        if(list(ttdict.keys())[0] != "*"):
+                            tcpRoutes[site].append(ttdict)
+                        self.record(ttdict, i, 2)
+                if(args['udp']):
+                    if uFlag == 0:
+                        udict = self.UdpTrc(i, 3, site, 0.1)
+                        if site in udict.keys():
+                            uFlag = 1
+                        if(site not in udpRoutes.keys()):
+                            udpRoutes[site] = [];
+
+                        if(list(udict.keys())[0] != "*"):
+                            udpRoutes[site].append(udict)
+                        self.record(udict, i, 3)
+
+        createGraph(icmpRoutes, tcpRoutes, udpRoutes);
 
 if(__name__ == "__main__"):
     Traceroute(sys.argv[1:]);
