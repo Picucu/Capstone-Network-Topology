@@ -52,8 +52,47 @@ class Traceroute:
                     predropped.append("*")
                 else:
                     outdict[list(outdict.keys())[len(outdict.keys())-1]].append("*")
-    def record(self, dict, i):
+        keys = list(outdict.keys())
+        if len(list(outdict.keys())) == 0:
+            outdict["*"] = c
+        else:
+            predropped.extend(outdict[keys[0]])
+            outdict[keys[0]] = predropped
+        return outdict
+
+    def UdpTrc(self, i, c, addr, t=5):
+        outdict = {}
+        predropped = []
+        for x in range(0,c):
+            pktt = IP(dst=addr, ttl=i) / UDP(dport=80)
+            anst= sr1(pktt, verbose = 0, timeout=t)
+            if anst is not None:
+                if anst.src not in outdict:
+                    outdict[anst.src] = [anst.time - pktt.sent_time]
+                else:
+                    outdict[anst.src].append(anst.time - pktt.sent_time)
+            else:
+                # this is horrible but it works i guess
+                if len(list(outdict.keys())) == 0:
+                    predropped.append("*")
+                else:
+                    outdict[list(outdict.keys())[len(outdict.keys())-1]].append("*")
+        keys = list(outdict.keys())
+        if len(list(outdict.keys())) == 0:
+            outdict["*"] = c
+        else:
+            predropped.extend(outdict[keys[0]])
+            outdict[keys[0]] = predropped
+        return outdict
+    
+    def record(self, dict, i, type):
+        pkttypes ={
+            1 : "ICMP",
+            2: "TCP",
+            3: "UDP"
+        }
         for key in dict:
+<<<<<<< HEAD
             out = ""
             if key == "*":
                 out = out + "{0} ***.***.***\t".format(i) + "* " * dict[key]
@@ -65,6 +104,19 @@ class Traceroute:
                     else:
                         out = out+"  {0:.2f}ms".format(time*1000)
             print(out)
+=======
+                out = ""
+                if key == "*":
+                    out = out + pkttypes[type] + " {0} ***.***.***\t".format(i) + "* " * dict[key]
+                else:
+                    out = out + pkttypes[type] + " {0} {1}\t".format(i, key)
+                    for time in dict[key]:
+                        if time == "*":
+                            out = out+"\t*"
+                        else:
+                            out = out+"  {0:.2f}ms".format(time*1000)
+                print(out)
+>>>>>>> 37822871776aa6a450a59e7b3c7df65772c298d5
 
     def run(self):
 
@@ -78,6 +130,9 @@ class Traceroute:
             tFlag = 0
             uFlag = 0
             ttl = 20
+            iedges = []
+            tedges = []
+            uedges = []
             for i in range(1, ttl+1):
                 #pktt = IP(dst=site, ttl=(1,20)) / TCP(dport=80, flags="S")
                 #anst= sr1(pktt, timeout=10)
@@ -86,43 +141,20 @@ class Traceroute:
                 # ICMP MODULE
                 
                 if iFlag == 0:
-                    itdict = self.IcmpTrc(i, 3, site);
+                    itdict = self.IcmpTrc(i, 3, site)
                     if site in itdict.keys():
                         iFlag = 1
-                    self.record(itdict, i)
-                    # for times in range(0,5):
-                    #     if iFlag == 0:
-                    #         pkti = IP(dst=site, ttl=i) / ICMP()
-                    #         ansi= sr1(pkti,verbose = 0, timeout=10)
-                    #     if ansi is not None:
-                    #         if ansi.src == site:
-                    #             if ansi.src not in itdict:
-                    #                 itdict[ansi.src] = [time]
-                    #             else:
-                    #                 itdict[ansi.src].append(time)
-                    #             iFlag = 1
-                    #         if ansi is not None and iFlag == 0:
-                    #             time = ansi.time - pkti.sent_time
-                    #             if ansi.src not in itdict:
-                    #                 itdict[ansi.src] = [time]
-                    #             else:
-                    #                 itdict[ansi.src].append(time)
-                    #         elif ansi is None:
-                    #             itdict[ansi.src].append("*")
-                    #             ansi = None
-                    #     elif ansi is None and iFlag == 0:
-                    #         itdict["*"] = ["*"]
-                    #         ansi = None
-                
-                
-                # TCP MODULE
-                
-                
-                
-                
-                
-            
-            
+                    self.record(itdict, i, 1)
+                if tFlag == 0:
+                    ttdict = self.TcpTrc(i, 3, site)
+                    if site in ttdict.keys():
+                        tFlag = 1
+                    self.record(ttdict, i, 2)
+                if uFlag == 0:
+                    udict = self.UdpTrc(i, 3, site)
+                    if site in udict.keys():
+                        uFlag = 1
+                    self.record(udict, i, 3)
             #     if reply is None:
             #         print("No reply")
             #         continue
