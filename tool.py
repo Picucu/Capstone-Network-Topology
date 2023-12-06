@@ -1,8 +1,9 @@
 import sys;import csv;
 import argparse;
 import re;
+import pandas as pd;
 from visualizer import createGraph;
-from scapy.all import IP, send, ICMP, sr, sr1, TCP, traceroute, ls, srp, Ether, UDP;
+from scapy.all import IP, send, ICMP, sr, sr1, TCP, traceroute, ls, srp, Ether, UDP, get_if_addr, conf;
 
 class Traceroute:
 
@@ -125,7 +126,7 @@ class Traceroute:
         sites = ["8.8.8.8", "1.1.1.1", "8.8.4.4", "208.67.222.222"]
         # sites = ["8.8.8.8", "1.1.1.1"];
         # sites = ["1.1.1.1"];
-
+        ownIP = get_if_addr(conf.iface);
         icmpRoutes = {};
         tcpRoutes = {};
         udpRoutes = {};
@@ -171,7 +172,114 @@ class Traceroute:
                             udpRoutes[site].append(udict)
                         self.record(udict, i, 3)
 
-        createGraph(icmpRoutes, tcpRoutes, udpRoutes);
+        print(icmpRoutes)
+        #createGraph(icmpRoutes, tcpRoutes, udpRoutes);
+        # we need 5 different pieces of information end point, src, dst, latency, protocol
+        # print(icmpRoutes.keys())
+        # for key in icmpRoutes.keys():
+        #     print(icmpRoutes[key])
+
+        #     for i in icmpRoutes[key]:
+
+        f = open("icmpdata.csv", "w")
+        f.write("")
+        f.close()
+        for key in icmpRoutes.keys():
+            f = open("icmpdata.csv", "a")
+            f.write(key + ","+",")
+            f.write("\n,,\n")
+            f.close()
+            fields = ["src","dst","delay"]
+            src = [ownIP]
+            dst = []
+            delay = []
+            for i in icmpRoutes[key]:
+                avg = 0
+                c = 0
+                for j in i[list(i.keys())[0]]:
+                    if j != "*":
+                        c+=1
+                        avg += j
+                avg = avg/c
+                dst.append(list(i.keys())[0])
+                src.append(list(i.keys())[0])
+                delay.append(avg)
+            src = src[:-1]
+            x = zip(src, dst, delay)
+            f = open("icmpdata.csv", "a")
+            writer = csv.writer(f, dialect="unix")
+            writer.writerow(fields)
+            for row in x:
+                writer.writerow(row)
+            f.write(",,\n,,\n")
+            f.close()
+        f = open("tcpdata.csv", "w")
+        f.write("")
+        f.close()
+        for key in tcpRoutes.keys():
+            f = open("tcpdata.csv", "a")
+            f.write(key + ","+",")
+            f.write("\n,,\n")
+            f.close()
+            fields = ["src","dst","delay"]
+            src = [ownIP]
+            dst = []
+            delay = []
+            for i in tcpRoutes[key]:
+                avg = 0
+                c = 0
+                for j in i[list(i.keys())[0]]:
+                    if j != "*":
+                        c+=1
+                        avg += j
+                avg = avg/c
+                dst.append(list(i.keys())[0])
+                src.append(list(i.keys())[0])
+                delay.append(avg)
+            src = src[:-1]
+            x = zip(src, dst, delay)
+            f = open("tcpdata.csv", "a")
+            writer = csv.writer(f, dialect="unix")
+            writer.writerow(fields)
+            for row in x:
+                writer.writerow(row)
+            f.write(",,\n,,\n")
+            f.close()
+        f = open("udpdata.csv", "w")
+        f.write("")
+        f.close()
+        for key in udpRoutes.keys():
+            f = open("udpdata.csv", "a")
+            f.write(key + ","+",")
+            f.write("\n,,\n")
+            f.close()
+            fields = ["src","dst","delay"]
+            src = [ownIP]
+            dst = []
+            delay = []
+            for i in udpRoutes[key]:
+                avg = 0
+                c = 0
+                for j in i[list(i.keys())[0]]:
+                    if j != "*":
+                        c+=1
+                        avg += j
+                avg = avg/c
+                dst.append(list(i.keys())[0])
+                src.append(list(i.keys())[0])
+                delay.append(avg)
+            src = src[:-1]
+            x = zip(src, dst, delay)
+            f = open("udpdata.csv", "a")
+            writer = csv.writer(f, dialect="unix")
+            writer.writerow(fields)
+            for row in x:
+                writer.writerow(row)
+            f.write(",,\n,,\n")
+            f.close()
+    
+        
+
 
 if(__name__ == "__main__"):
     Traceroute(sys.argv[1:]);
