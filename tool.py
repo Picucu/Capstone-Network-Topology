@@ -1,18 +1,27 @@
-import sys;import csv;
+import sys;
+import csv;
 import argparse;
 import re;
 from visualizer import createGraph;
-from scapy.all import IP, send, ICMP, sr, sr1, TCP, traceroute, ls, srp, Ether, UDP;
+from scapy.all import IP, send, ICMP, sr, sr1, TCP, traceroute, ls, srp, Ether, UDP, randstring;
 
 class Traceroute:
 
     def __init__(self, argv):
+        if(len(argv) == 0):
+            print('Please specify a data file in the form of a csv file');
+            return;
+
         args = {
+            'filename': argv[0],
             'udp': "-udp" in argv,
             'tcp': "-tcp" in argv,
             'icmp': "-icmp" in argv,
             'ttlStart': int(re.search(r'-ttlStart=[0-9]+', ' '.join(argv)).group(0).split('=')[1]) if re.search(r'-ttlStart=[0-9]+', ' '.join(argv)) else 1,
             'ttlEnd': int(re.search(r'-ttlEnd=[0-9]+', ' '.join(argv)).group(0).split('=')[1]) if re.search(r'-ttlEnd=[0-9]+', ' '.join(argv)) else 20,
+            'tcpPort': int(re.search(r'-tcpPort=[0-9]+', ' '.join(argv)).group(0).split('=')[1]) if re.search(r'-tcpPort=[0-9]+', ' '.join(argv)) else 80,
+            'udpPort': int(re.search(r'-udpPort=[0-9]+', ' '.join(argv)).group(0).split('=')[1]) if re.search(r'-udpPort=[0-9]+', ' '.join(argv)) else 80,
+            'size': int(re.search(r'-size=[0-9]+', ' '.join(argv)).group(0).split('=')[1]) if re.search(r'-size=[0-9]+', ' '.join(argv)) else 100
         }
 
         if(args['ttlStart'] > args['ttlEnd']):
@@ -24,10 +33,21 @@ class Traceroute:
             args['tcp'] = True;
             args['icmp'] = True;
 
-        # createGraph([]);
+        if(args['filename'][-4:] != '.csv'):
+            print('Invalid csv file');
+            return;
+
+        sitelist = []
+        with open(args['filename']) as csvfile:
+            spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
+            for row in spamreader:
+                sitelist.append(row[0]);
+
+        args['sites'] = sitelist;
+
         self.run(args);
     
-    def IcmpTrc(self, i, c, addr, t=5):
+    def IcmpTrc(self, i, c, addr, payload, t=5):
         outdict = {}
         predropped = []
         for x in range(0, c):
@@ -52,11 +72,11 @@ class Traceroute:
             outdict[keys[0]] = predropped
         return outdict
 
-    def TcpTrc(self, i, c, addr, t=5):
+    def TcpTrc(self, i, c, addr, port, payload, t=5):
         outdict = {}
         predropped = []
         for x in range(0,c):
-            pktt = IP(dst=addr, ttl=i) / TCP(dport=80, flags="S")
+            pktt = IP(dst=addr, ttl=i) / TCP(dport=port, flags="S")
             anst= sr1(pktt, verbose = 0, timeout=t)
             if anst is not None:
                 if anst.src not in outdict:
@@ -77,11 +97,11 @@ class Traceroute:
             outdict[keys[0]] = predropped
         return outdict
 
-    def UdpTrc(self, i, c, addr, t=5):
+    def UdpTrc(self, i, c, addr, port, payloadt=5):
         outdict = {}
         predropped = []
         for x in range(0,c):
-            pktt = IP(dst=addr, ttl=i) / UDP(dport=80)
+            pktt = IP(dst=addr, ttl=i) / UDP(dport=port)
             anst= sr1(pktt, verbose = 0, timeout=t)
             if anst is not None:
                 if anst.src not in outdict:
@@ -122,24 +142,23 @@ class Traceroute:
                 print(out)
 
     def run(self, args):
-        sites = ["8.8.8.8", "1.1.1.1", "8.8.4.4", "208.67.222.222"]
-        # sites = ["8.8.8.8", "1.1.1.1"];
-        # sites = ["1.1.1.1"];
+
+        payload = randstring(args['size']);
 
         icmpRoutes = {};
         tcpRoutes = {};
         udpRoutes = {};
-        for site in sites:
+        for site in args['sites']:
             #TODO add ability to specify number of pings per ttl and choosing ttl range
             #activate, deactivate tcp, udp and icmp
-            print("Tracerouting", site);
+            print("Tracerouting", );
             iFlag = 0
             tFlag = 0
             uFlag = 0
             for i in range(args['ttlStart'], args['ttlEnd']):
                 if(args['icmp']):
                     if iFlag == 0:
-                        itdict = self.IcmpTrc(i, 3, site, 0.1)
+                        itdict = self.IcmpTrc(i, 3, site, payload, 0.1)
                         if site in itdict.keys():
                             iFlag = 1
                         if(site not in icmpRoutes.keys()):
@@ -150,7 +169,7 @@ class Traceroute:
                         self.record(itdict, i, 1)
                 if(args['tcp']):
                     if tFlag == 0:
-                        ttdict = self.TcpTrc(i, 3, site, 0.1)
+                        ttdict = self.TcpTrc(i, 3, site, args['tcpPort'], payload, 0.1)
                         if site in ttdict.keys():
                             tFlag = 1
                         if(site not in tcpRoutes.keys()):
@@ -161,7 +180,7 @@ class Traceroute:
                         self.record(ttdict, i, 2)
                 if(args['udp']):
                     if uFlag == 0:
-                        udict = self.UdpTrc(i, 3, site, 0.1)
+                        udict = self.UdpTrc(i, 3, site, args['udpPort'], payload, 0.1)
                         if site in udict.keys():
                             uFlag = 1
                         if(site not in udpRoutes.keys()):
