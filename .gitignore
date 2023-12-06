@@ -5,3 +5,7 @@ sites.csv/
 icmpdata.csv/
 test.py/
 graph.html/
+icmpdata.csv/
+tcpdata.csv/
+udpdata.csv/
+filereaddebug.py/
