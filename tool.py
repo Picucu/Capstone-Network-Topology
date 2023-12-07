@@ -3,7 +3,6 @@ import csv;
 import argparse;
 import re;
 import pandas as pd;
-from visualizer import createGraph;
 from scapy.all import IP, send, ICMP, sr, sr1, TCP, traceroute, ls, srp, Ether, UDP, randstring, get_if_addr, conf;
 
 class Traceroute:
@@ -52,7 +51,7 @@ class Traceroute:
         outdict = {}
         predropped = []
         for x in range(0, c):
-            pkti = IP(dst=addr, ttl=i) / ICMP()
+            pkti = IP(dst=addr, ttl=i) / ICMP() / payload
             ansi= sr1(pkti,verbose = 0, timeout=t)
             if ansi is not None:
                 if ansi.src not in outdict:
@@ -77,7 +76,7 @@ class Traceroute:
         outdict = {}
         predropped = []
         for x in range(0,c):
-            pktt = IP(dst=addr, ttl=i) / TCP(dport=port, flags="S")
+            pktt = IP(dst=addr, ttl=i) / TCP(dport=port, flags="S") / payload
             anst= sr1(pktt, verbose = 0, timeout=t)
             if anst is not None:
                 if anst.src not in outdict:
@@ -98,11 +97,11 @@ class Traceroute:
             outdict[keys[0]] = predropped
         return outdict
 
-    def UdpTrc(self, i, c, addr, port, payloadt=5):
+    def UdpTrc(self, i, c, addr, port, payload, t=5):
         outdict = {}
         predropped = []
         for x in range(0,c):
-            pktt = IP(dst=addr, ttl=i) / UDP(dport=port)
+            pktt = IP(dst=addr, ttl=i) / UDP(dport=port) / payload
             anst= sr1(pktt, verbose = 0, timeout=t)
             if anst is not None:
                 if anst.src not in outdict:
@@ -163,7 +162,7 @@ class Traceroute:
             for i in range(args['ttlStart'], args['ttlEnd']):
                 if(args['icmp']):
                     if iFlag == 0:
-                        itdict = self.IcmpTrc(i, 3, site, payload, 0.1)
+                        itdict = self.IcmpTrc(i, 3, site, payload, 0.4)
                         if site in itdict.keys():
                             iFlag = 1
                         if(site not in icmpRoutes.keys()):
@@ -174,7 +173,7 @@ class Traceroute:
                         self.record(itdict, i, 1)
                 if(args['tcp']):
                     if tFlag == 0:
-                        ttdict = self.TcpTrc(i, 3, site, args['tcpPort'], payload, 0.1)
+                        ttdict = self.TcpTrc(i, 3, site, args['tcpPort'], payload, 0.4)
                         if site in ttdict.keys():
                             tFlag = 1
                         if(site not in tcpRoutes.keys()):
@@ -185,7 +184,7 @@ class Traceroute:
                         self.record(ttdict, i, 2)
                 if(args['udp']):
                     if uFlag == 0:
-                        udict = self.UdpTrc(i, 3, site, args['udpPort'], payload, 0.1)
+                        udict = self.UdpTrc(i, 3, site, args['udpPort'], payload, 0.4)
                         if site in udict.keys():
                             uFlag = 1
                         if(site not in udpRoutes.keys()):
